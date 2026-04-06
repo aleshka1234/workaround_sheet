@@ -4,8 +4,8 @@ from django.utils import timezone
 
 # Константы статусов
 class StatusChoices(models.IntegerChoices):
-    NOT_SIGNED = 0, 'Не подписано'
-    SIGNED = 1, 'Подписано'
+    SIGNED = 0, 'Подписано'
+    NOT_SIGNED = 1, 'Не подписано'
     DEBT = 2, 'Долг'
 
 
@@ -15,10 +15,16 @@ class Student(models.Model):
     full_name = models.CharField(max_length=255, verbose_name="ФИО Студента",
                                  blank=True)
 
+    def __str__(self):
+        return self.full_name
+
 
 class StaffWorker(models.Model):
     full_name = models.CharField(max_length=255, verbose_name="ФИО Сотрудника",
                                  blank=True)
+
+    def __str__(self):
+        return self.full_name
 
 
 class ObhhodnoiListZaiavlenie(models.Model):
