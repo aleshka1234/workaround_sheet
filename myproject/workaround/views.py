@@ -1,62 +1,99 @@
-from django.shortcuts import render, get_object_or_404, redirect
+from django.http import Http404, HttpRequest, HttpResponse
+from django.shortcuts import redirect, render
 from django.views import View
-from django.views.generic import ListView, DetailView
-# Импортируем твои модели и те самые StatusChoices из models.py
-from .models import ObhhodnoiListZaiavlenie, ObhhodnoiListZaiavlenieItem, \
-    StatusChoices
+from django.views.generic import ListView
+from sqlalchemy import select
+from sqlalchemy.orm import joinedload
+
+from workaround.constants import StatusChoices
+from workaround.db.logic import apply_debt_rules, recalc_statement_result_status
+from workaround.db.models_sa import (
+    ObhhodnoiListZaiavlenie,
+    ObhhodnoiListZaiavlenieItem,
+)
 
 
-# 1. Интерфейс СОТРУДНИКА (Список всех заявок по его отделу)
+def _session(request: HttpRequest):
+    return request.sa_session
+
+
 class StaffWorkerView(ListView):
-    model = ObhhodnoiListZaiavlenieItem
-    template_name = 'obhhodnoi/staff_list.html'
-    context_object_name = 'items'
+    template_name = "obhhodnoi/staff_list.html"
+    context_object_name = "items"
 
     def get_queryset(self):
-        # Позже здесь будет фильтрация по отделу сотрудника
-        return ObhhodnoiListZaiavlenieItem.objects.all()
-
-    def post(self, request, *args, **kwargs):
-        # Кнопка «Подписать всем, у кого нет долгов»
-        if 'sign_all_clean' in request.POST:
-            # Берем только те пункты, где флаг debt=False и статус еще "Не подписано"
-            items_to_update = ObhhodnoiListZaiavlenieItem.objects.filter(
-                debt=False,
-                status=StatusChoices.NOT_SIGNED
+        session = _session(self.request)
+        stmt = (
+            select(ObhhodnoiListZaiavlenieItem)
+            .options(
+                joinedload(ObhhodnoiListZaiavlenieItem.statement).joinedload(
+                    ObhhodnoiListZaiavlenie.student
+                ),
             )
-            for item in items_to_update:
-                item.status = StatusChoices.SIGNED
-                item.save()  # Вызываем save(), чтобы сработал пересчет в модели
-        return redirect('staff_list')
+            .order_by(ObhhodnoiListZaiavlenieItem.id)
+        )
+        return list(session.scalars(stmt).unique().all())
+
+    def post(self, request: HttpRequest, *args, **kwargs) -> HttpResponse:
+        if "sign_all_clean" in request.POST:
+            session = _session(request)
+            items = session.scalars(
+                select(ObhhodnoiListZaiavlenieItem).where(
+                    ObhhodnoiListZaiavlenieItem.debt.is_(False),
+                    ObhhodnoiListZaiavlenieItem.status == int(StatusChoices.NOT_SIGNED),
+                )
+            ).all()
+            for item in items:
+                item.status = int(StatusChoices.SIGNED)
+                apply_debt_rules(item)
+                recalc_statement_result_status(session, item.statement)
+        return redirect("staff_list")
+
+    def get(self, request: HttpRequest, *args, **kwargs) -> HttpResponse:
+        self.object_list = self.get_queryset()
+        context = self.get_context_data()
+        return self.render_to_response(context)
 
 
-# 2. Обработка КНОПОК действий сотрудника
 class ItemActionView(View):
-    def post(self, request, pk):
-        # Находим конкретную строку в обходном листе
-        item = get_object_or_404(ObhhodnoiListZaiavlenieItem, pk=pk)
-        action = request.POST.get('action')
+    def post(self, request: HttpRequest, pk: int) -> HttpResponse:
+        session = _session(request)
+        item = session.get(ObhhodnoiListZaiavlenieItem, pk)
+        if item is None:
+            raise Http404()
 
-        if action == 'sign':
-            # Кнопка «Подписать»
-            item.status = StatusChoices.SIGNED
+        action = request.POST.get("action")
 
-        elif action == 'comment':
-            # Кнопка «Отправить комментарий»5
-            # Записываем текст и ставим статус "Долг", чтобы студент увидел проблему
-            item.debt_comment = request.POST.get('comment_text')
-            item.status = StatusChoices.DEBT
-            item.debt = True  # Помечаем, что долг есть физически
+        if action == "sign":
+            item.status = int(StatusChoices.SIGNED)
+        elif action == "comment":
+            item.debt_comment = request.POST.get("comment_text")
+            item.debt = True
 
-        # Сохраняем изменения. Метод save() в твоем models.py сам
-        # обновит result_status у главного заявления.
-        item.save()
-        return redirect('staff_list')
+        apply_debt_rules(item)
+        recalc_statement_result_status(session, item.statement)
+        return redirect("staff_list")
 
 
-# 3. Интерфейс СТУДЕНТА (Просмотр своего обходного листа)
-class StudentObhhodnoiDetailView(DetailView):
-    model = ObhhodnoiListZaiavlenie
-    template_name = 'obhhodnoi/student_detail.html'
-    context_object_name = 'zaiavlenie'
-    # Студент видит статус как для каждого отдела, так и для всего листа [cite: 55]
+class StudentObhhodnoiDetailView(View):
+    template_name = "obhhodnoi/student_detail.html"
+
+    def get(self, request: HttpRequest, pk: int) -> HttpResponse:
+        session = _session(request)
+        stmt = (
+            select(ObhhodnoiListZaiavlenie)
+            .where(ObhhodnoiListZaiavlenie.id == pk)
+            .options(
+                joinedload(ObhhodnoiListZaiavlenie.line_statuses).joinedload(
+                    ObhhodnoiListZaiavlenieItem.staff_worker
+                ),
+            )
+        )
+        zaiavlenie = session.scalars(stmt).unique().one_or_none()
+        if zaiavlenie is None:
+            raise Http404()
+        return render(
+            request,
+            self.template_name,
+            {"zaiavlenie": zaiavlenie},
+        )

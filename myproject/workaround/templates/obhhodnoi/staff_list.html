@@ -30,7 +30,7 @@
                         </td>
                         <td class="text-end pe-4">
                             <div class="d-flex justify-content-end gap-2">
-                                <form method="post" action="{% url 'item_action' item.pk %}">
+                                <form method="post" action="{% url 'item_action' item.id %}">
                                     {% csrf_token %}
                                     <button type="submit" name="action" value="sign" class="btn btn-sm btn-outline-success">
                                         Подписать
@@ -38,17 +38,17 @@
                                 </form>
 
                                 <button type="button" class="btn btn-sm btn-outline-danger"
-                                        data-bs-toggle="modal" data-bs-target="#modal{{ item.pk }}">
+                                        data-bs-toggle="modal" data-bs-target="#modal{{ item.id }}">
                                     Долг / Коммент.
                                 </button>
                             </div>
                         </td>
                     </tr>
 
-                    <div class="modal fade" id="modal{{ item.pk }}" tabindex="-1" aria-hidden="true">
+                    <div class="modal fade" id="modal{{ item.id }}" tabindex="-1" aria-hidden="true">
                         <div class="modal-dialog modal-dialog-centered">
                             <div class="modal-content border-0 shadow">
-                                <form method="post" action="{% url 'item_action' item.pk %}">
+                                <form method="post" action="{% url 'item_action' item.id %}">
                                     {% csrf_token %}
                                     <input type="hidden" name="action" value="comment">
 
@@ -59,8 +59,8 @@
 
                                     <div class="modal-body">
                                         <div class="mb-3">
-                                            <label for="commentText{{ item.pk }}" class="form-label text-muted small">Укажите причину или инструкции для студента [cite: 49, 51]</label>
-                                            <textarea id="commentText{{ item.pk }}"
+                                            <label for="commentText{{ item.id }}" class="form-label text-muted small">Укажите причину или инструкции для студента [cite: 49, 51]</label>
+                                            <textarea id="commentText{{ item.id }}"
                                                       name="comment_text"
                                                       class="form-control"
                                                       rows="5"
