@@ -1,6 +1,7 @@
 from django.http import Http404, HttpRequest, HttpResponse
 from django.shortcuts import redirect, render
 from django.views import View
+from django.utils import timezone
 from sqlalchemy import select
 from sqlalchemy.orm import joinedload, selectinload
 
@@ -100,11 +101,13 @@ class ItemActionView(View):
             item.status = int(StatusChoices.SIGNED)
             item.debt = False
             item.staff_worker_id = worker.id
+            item.date = timezone.now()
         elif action == "comment":
             item.debt_comment = request.POST.get("comment_text")
             item.debt = True
             item.status = int(StatusChoices.DEBT)  # Статус "Долг"
             item.staff_worker_id = worker.id
+            item.date = timezone.now()
 
         apply_debt_rules(item)
         recalc_statement_result_status(session, item.statement)

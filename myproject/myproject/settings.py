@@ -11,19 +11,21 @@ https://docs.djangoproject.com/en/6.0/ref/settings/
 """
 
 import os
+from dotenv import load_dotenv
 from pathlib import Path
 from urllib.parse import quote_plus
 
+load_dotenv()
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 # PostgreSQL (Django + SQLAlchemy + Alembic). Переопределяется переменными окружения.
 _POSTGRES = {
-    'NAME': 'workaround',
-    'USER': 'postgres',
-    'PASSWORD': 'postgres',
-    'HOST': '127.0.0.1',
-    'PORT': '5432',
+    'NAME': os.getenv('NAME'),
+    'USER': os.getenv('USER'),
+    'PASSWORD': os.getenv('PASSWORD'),
+    'HOST': os.getenv('HOST'),
+    'PORT': os.getenv('PORT'),
 }
 
 # SQLAlchemy: полный URL или сборка из тех же POSTGRES_* (драйвер psycopg2-binary).
@@ -39,7 +41,7 @@ SQLALCHEMY_ECHO = os.environ.get("SQLALCHEMY_ECHO", "").lower() in ("1",
 # See https://docs.djangoproject.com/en/6.0/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-y@%4d+etqyfoapq1a_(p_j^@tuvw((w3lza!$z$ju)u)uxu9sk'
+SECRET_KEY = os.getenv('SECRET_KEY')
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
