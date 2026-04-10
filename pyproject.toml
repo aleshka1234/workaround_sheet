@@ -7,6 +7,7 @@ requires-python = ">=3.12"
 dependencies = [
     "alembic>=1.18.4",
     "django>=6.0.3",
+    "dotenv>=0.9.9",
     "psycopg>=3.3.3",
     "psycopg2-binary>=2.9.11",
     "sqlalchemy>=2.0.49",
