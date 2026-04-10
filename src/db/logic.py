@@ -1,11 +1,10 @@
 from sqlalchemy.orm import Session
 from sqlalchemy import select
 
-from constants import StatusChoices
 from db.models_sa import (
     ObhhodnoiListZaiavlenie,
     ObhhodnoiListZaiavlenieItem,
-    Department,
+    Department,StatusChoices
 )
 
 
