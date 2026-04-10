@@ -5,10 +5,10 @@ from django.utils import timezone
 from sqlalchemy import select
 from sqlalchemy.orm import joinedload, selectinload
 
-from .constants import StatusChoices
-from bypass_project.db.logic import apply_debt_rules, \
+from constants import StatusChoices
+from db.logic import apply_debt_rules, \
     recalc_statement_result_status, initialize_statement_items
-from bypass_project.db.models_sa import (
+from db.models_sa import (
     ObhhodnoiListZaiavlenie,
     ObhhodnoiListZaiavlenieItem,
     StaffWorker

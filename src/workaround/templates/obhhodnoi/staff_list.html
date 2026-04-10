@@ -1,0 +1,86 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="card shadow-sm">
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="bg-light">
+                    <tr>
+                        <th class="ps-4">Студент</th>
+                        <th>Статус</th>
+                        <th class="text-end pe-4">Действия</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in items %}
+                    <tr>
+                        <td class="ps-4">
+                            <div class="fw-bold">{{ item.statement.student.full_name }}</div>
+                            <small class="text-muted">Заявление №{{ item.statement.id }}</small>
+                        </td>
+                        <td>
+                            {% if item.status == 0 %}
+                                <span class="badge bg-success-subtle text-success border border-success px-3">Подписано</span>
+                            {% elif item.status == 2 %}
+                                <span class="badge bg-danger-subtle text-danger border border-danger px-3">Долг</span>
+                            {% else %}
+                                <span class="badge bg-secondary-subtle text-secondary border border-secondary px-3">В ожидании</span>
+                            {% endif %}
+                        </td>
+                        <td class="text-end pe-4">
+                            <div class="d-flex justify-content-end gap-2">
+                                <form method="post" action="{% url 'item_action' item.id %}">
+                                    {% csrf_token %}
+                                    <button type="submit" name="action" value="sign" class="btn btn-sm btn-outline-success">
+                                        Подписать
+                                    </button>
+                                </form>
+
+                                <button type="button" class="btn btn-sm btn-outline-danger"
+                                        data-bs-toggle="modal" data-bs-target="#modal{{ item.id }}">
+                                    Долг / Коммент.
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+
+                    <div class="modal fade" id="modal{{ item.id }}" tabindex="-1" aria-hidden="true">
+                        <div class="modal-dialog modal-dialog-centered">
+                            <div class="modal-content border-0 shadow">
+                                <form method="post" action="{% url 'item_action' item.id %}">
+                                    {% csrf_token %}
+                                    <input type="hidden" name="action" value="comment">
+
+                                    <div class="modal-header bg-light">
+                                        <h5 class="modal-title">Причина задолженности</h5>
+                                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                    </div>
+
+                                    <div class="modal-body">
+                                        <div class="mb-3">
+                                            <label for="commentText{{ item.id }}" class="form-label text-muted small">Укажите причину или инструкции для студента [cite: 49, 51]</label>
+                                            <textarea id="commentText{{ item.id }}"
+                                                      name="comment_text"
+                                                      class="form-control"
+                                                      rows="5"
+                                                      style="resize: none;"
+                                                      placeholder="Например: Не сданы книги в библиотеку..."></textarea>
+                                        </div>
+                                    </div>
+
+                                    <div class="modal-footer bg-light border-0">
+                                        <button type="button" class="btn btn-secondary px-4" data-bs-dismiss="modal">Отмена</button>
+                                        <button type="submit" class="btn btn-danger px-4">Выставить долг</button>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

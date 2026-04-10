@@ -1,0 +1,42 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-4">
+        <div class="card p-4 mb-4 bg-white shadow-sm">
+            <h4>Мое заявление</h4>
+            <hr>
+            <p><strong>ID заявления:</strong> {{ zaiavlenie.id }}</p>
+            <p><strong>Общий статус:</strong>
+                {% if zaiavlenie.result_status == 0 %}
+                    <span class="text-success fw-bold">ПОДПИСАНО</span>
+                {% elif zaiavlenie.result_status == 2 %}
+                    <span class="text-danger fw-bold">ДОЛГ</span>
+                {% else %}
+                    <span class="text-warning fw-bold">В ПРОЦЕССЕ</span>
+                {% endif %}
+            </p>
+        </div>
+    </div>
+
+    <div class="col-md-8">
+        <h3>Статусы по отделам</h3>
+        {% for line in zaiavlenie.line_statuses %}
+        <div class="card mb-3 border-start border-4 {% if line.status == 0 %}border-success{% elif line.status == 2 %}border-danger{% else %}border-warning{% endif %}">
+            <div class="card-body d-flex justify-content-between align-items-center">
+                <div>
+                    <h5 class="mb-1">Отдел №{{ line.staff_worker.id }}</h5>
+                    <p class="text-muted mb-0 small">Дата обновления: {{ line.date|date:"d.m.Y H:i" }}</p>
+                </div>
+                <div class="text-end">
+                    <span class="d-block mb-1">{{ line.get_status_display }}</span>
+                    {% if line.debt_comment %}
+                        <small class="text-danger italic">Заметка: {{ line.debt_comment }}</small>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}

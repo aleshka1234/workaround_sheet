@@ -1,4 +1,4 @@
-from myproject.db import SessionLocal
+from db import SessionLocal
 
 
 class SQLAlchemySessionMiddleware:
