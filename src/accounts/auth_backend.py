@@ -1,50 +1,108 @@
 from django.contrib.auth.backends import BaseBackend
+from django.contrib.auth.hashers import check_password
 from django.contrib.auth.models import User
+from sqlalchemy.sql import func
 
-from db.session import SessionLocal
-from db.models_sa import CachedUser, UserType
+from db import SessionLocal, Student, StaffWorker
 
 
-class SSOCachedBackend(BaseBackend):
+class WorkaroundAuthBackend(BaseBackend):
     """
-    Аутентификация через SSO с кэшированием пользователя в SQLAlchemy.
+    Аутентификация через таблицы Student и StaffWorker.
     """
 
-    def authenticate(self, request, remote_user=None):
-        if not remote_user:
+    def authenticate(self, request, username=None, password=None):
+        if not username or not password:
             return None
 
         db = SessionLocal()
+
         try:
-            # Ищем или создаём пользователя в кэше
-            cached_user = self._get_or_create_cached_user(db, remote_user)
-            if not cached_user:
+            user_data = db.query(Student).filter(
+                Student.username == username).first()
+            user_type = 'student'
+
+            if user_data is None:
+                user_data = db.query(StaffWorker).filter(
+                    StaffWorker.username == username).first()
+                user_type = 'staff'
+
+            if user_data is None:
                 return None
 
-            # Создаём Django-пользователя в памяти
+            # Проверка пароля
+            if user_data.password_hash:
+                if not check_password(password, user_data.password_hash):
+                    return None
+
+            else:
+                # Если пароль не задан – для теста пропускаем (временно)
+                pass
+
+            # Обновляем last_login
+            user_data.last_login = func.now()
+            db.commit()
+
+            # Разбираем full_name
+            full_name = user_data.full_name or ""
+            name_parts = full_name.split()
+            first_name = name_parts[1] if len(name_parts) > 1 else ""
+            last_name = name_parts[0] if name_parts else ""
+
+            # Создаём Django-пользователя (в памяти, не сохраняем)
             django_user = User(
-                username=cached_user.username,
-                first_name=cached_user.first_name,
-                last_name=cached_user.last_name,
-                email=cached_user.email or "",
+                id=user_data.id,
+                username=username,
+                first_name=first_name,
+                last_name=last_name,
+                email=getattr(user_data, 'email', '') or "",
             )
 
-            # Даём права на вход в админку, если сотрудник
-            if cached_user.user_type == UserType.STAFF:
-                django_user.is_staff = True
+            # Права
+            if user_type == 'staff':
+                django_user.is_staff = getattr(user_data, 'is_staff', False)
+                django_user.is_superuser = getattr(user_data, 'is_superuser', False)
+            else:
+                django_user.is_staff = False
+                django_user.is_superuser = False
 
-            # Здесь можно добавить назначение прав через self._assign_permissions()
+            # Сохраняем дополнительные данные в сессии
+            request.session['user_type'] = user_type
+            request.session['user_db_id'] = user_data.id
+            if user_type == 'staff':
+                request.session['department_id'] = user_data.department_id
 
             return django_user
 
+        except Exception:
+            db.rollback()
+            return None
         finally:
             db.close()
 
-    def _get_or_create_cached_user(self, db, sso_login):
-        """Находит или создаёт запись в кэше."""
-        from db.logic import get_or_create_cached_user
-        return get_or_create_cached_user(db, sso_login)
-
     def get_user(self, user_id):
-        # Не используется, т.к. пользователь не хранится в Django DB
-        return None
+        from django.contrib.auth.models import User
+        from db import SessionLocal, Student, StaffWorker
+
+        db = SessionLocal()
+        try:
+            # Ищем студента
+            student = db.query(Student).get(user_id)
+            if student:
+                user = User(id=student.id, username=student.username)
+                user.is_staff = False
+                user.email = student.email or ""
+                return user
+
+            # Ищем сотрудника
+            staff = db.query(StaffWorker).get(user_id)
+            if staff:
+                user = User(id=staff.id, username=staff.username)
+                user.is_staff = staff.is_staff
+                user.is_superuser = staff.is_superuser
+                user.email = staff.email or ""
+                return user
+
+            return None
+        finally:
+            db.close()

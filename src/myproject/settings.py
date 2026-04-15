@@ -66,6 +66,7 @@ INSTALLED_APPS = [
 ]
 
 MIDDLEWARE = [
+    # 'accounts.middleware.RestoreUserMiddleware',
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
@@ -77,7 +78,7 @@ MIDDLEWARE = [
 ]
 
 AUTHENTICATION_BACKENDS = [
-    'django.contrib.auth.backends.ModelBackend', # ← стандартный бэкенд
+    'accounts.auth_backend.WorkaroundAuthBackend',  # ← стандартный бэкенд
 ]
 
 ROOT_URLCONF = 'myproject.urls'
@@ -134,9 +135,10 @@ AUTH_PASSWORD_VALIDATORS = [
 # Internationalization
 # https://docs.djangoproject.com/en/6.0/topics/i18n/
 
+
 LANGUAGE_CODE = 'en-us'
 
-TIME_ZONE = 'UTC'
+TIME_ZONE = 'Asia/Krasnoyarsk'
 
 USE_I18N = True
 
@@ -146,3 +148,18 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/6.0/howto/static-files/
 
 STATIC_URL = 'static/'
+
+LOGIN_URL = '/accounts/login/'
+LOGIN_REDIRECT_URL = '/'
+LOGOUT_REDIRECT_URL = '/accounts/login/'
+
+# Отключаем автоматическое обновление last_login через Django ORM
+# Мы обновляем его сами в бэкенде
+from django.contrib.auth import user_logged_in
+
+def disable_update_last_login(sender, user, request, **kwargs):
+    pass
+
+
+# Отключаем стандартный обработчик
+user_logged_in.disconnect(dispatch_uid='update_last_login')

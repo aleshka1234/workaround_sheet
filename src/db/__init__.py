@@ -1,6 +1,21 @@
-from db.base import Base
-from db.session import SessionLocal, engine, get_database_url
-from db.models_sa import StatusChoices
+from .base import Base
+from .session import SessionLocal, engine
+from .models_sa import (
+    Student, Department, StaffWorker,
+    ObhhodnoiListZaiavlenie, ObhhodnoiListZaiavlenieItem,
+    StatusChoices, STATUS_LABELS
+)
 
-__all__ = ["Base", "SessionLocal", "engine", "get_database_url",
-           "StatusChoices"]
+__all__ = [
+    "Base",
+    "SessionLocal",
+    "engine",
+    "Student",
+    "Department",
+    "StaffWorker",
+    "ObhhodnoiListZaiavlenie",
+    "ObhhodnoiListZaiavlenieItem",
+    "StatusChoices",
+    "STATUS_LABELS",
+]
+

@@ -1,0 +1,181 @@
+{% load workaround_filters %}
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>Обходной лист №{{ statement.id }}</title>
+    <style>
+        @page {
+            size: A4;
+            margin: 20mm 15mm 15mm 25mm;
+        }
+
+        body {
+            font-family: 'Times New Roman', Times, serif;
+            font-size: 12pt;
+            line-height: 1.2;
+            color: #000;
+            margin: 0 auto;
+            max-width: 700px;
+        }
+
+        .no-print { text-align: right; margin-bottom: 10px; }
+        .no-print button { padding: 5px 10px; cursor: pointer; }
+        @media print { .no-print { display: none; } }
+
+        /* Заголовок документа [cite: 88-90] */
+        .header { text-align: center; margin-bottom: 20px; }
+        .title { font-weight: bold; text-transform: uppercase; font-size: 12pt; }
+        .subtitle { font-style: italic; }
+
+        /* Поля студента [cite: 91-93] */
+        .student-data { margin-bottom: 15px; }
+        .label-bold { font-weight: bold; }
+
+        .line {
+            display: inline-block;
+            border-bottom: 1px solid #000;
+            text-align: center;
+            vertical-align: bottom;
+            white-space: nowrap;
+            padding: 0 5px;
+        }
+
+        /* Пункты [cite: 94-113] */
+        .item { margin-bottom: 10px; text-align: justify; }
+        .item-num { font-weight: bold; }
+        .fio-date { font-weight: bold; margin: 0 5px; }
+        .bracket-text { font-style: italic; font-size: 11pt; }
+        .indent-block { display: block; padding-left: 20px; font-style: italic; font-size: 10pt; line-height: 1.1; }
+
+        .section-break {
+            font-weight: bold;
+            text-align: center;
+            margin: 15px 0;
+        }
+    </style>
+</head>
+<body>
+
+<div class="no-print">
+    <button onclick="window.print()">Печать документа</button>
+</div>
+
+<div class="header">
+    <div class="title">ОБХОДНОЙ ЛИСТ </div>
+    <div class="subtitle">для обучающихся, <br>отъезжающих из Тихоокеанского государственного университета ]</div>
+</div>
+
+<div class="student-data">
+    <div>
+        <span class="label-bold">Ф.и.о. (полностью)</span>
+        <span class="line" style="width: 530px;">{{ statement.student.full_name }}</span>
+    </div>
+    <div style="margin-top: 5px;">
+        <span class="label-bold">институт, группа</span>
+        <span class="line" style="width: 555px;">{% if statement.student.institute %}{{ statement.student.institute }}, {% endif %}{{ statement.student.group }}</span>
+    </div>
+</div>
+
+<div class="item">
+    {% with item=statement.line_statuses|get_by_department:"Центр профессионального развития и сопровождения карьеры" %}
+    <span class="item-num">1.</span> Центр профессионального развития и сопровождения карьеры ( ул. Тихоокеанская, 136, ауд. 235л) <span class="bracket-text">(для студентов очной и очно-заочной форм обучения)</span> <br>
+    <span class="line" style="width: 320px;">{% if item and item.status == 0 %}{{ item.staff_worker.full_name }}{% endif %}</span>
+    <span class="fio-date">ФИО Дата</span>
+    <span class="line" style="width: 180px;">{% if item and item.status == 0 %}{{ item.date|date:"d.m.Y" }}{% endif %}</span>
+    {% endwith %}
+</div>
+
+<div class="item">
+    {% with item=statement.line_statuses|get_by_department:"Библиотека" %}
+    <span class="item-num">2.</span> Библиотека
+    <span class="line" style="width: 500px;">{% if item and item.status == 0 %}{{ item.staff_worker.full_name }}{% endif %} </span>
+    <span class="fio-date">ФИО Дата</span>
+    <span class="line" style="width: 180px;">{% if item and item.status == 0 %}{{ item.date|date:"d.m.Y" }}{% endif %}</span>
+    <span class="indent-block">(ТОГУ – ауд. 121ц, пединститут – 6 корпус, ауд. 10; ХГУЭП – ул. Тихоокеанская 134, ауд. 118 и ауд. 220) </span>
+    {% endwith %}
+</div>
+
+<div class="item">
+    {% with item=statement.line_statuses|get_by_department:"Спортклуб" %}
+    <span class="item-num">3.</span> Спортклуб ( ул. Тихоокеанская, 136, ауд. 07цв )
+    <span class="line" style="width: 220px;">{% if item and item.status == 0 %}{{ item.staff_worker.full_name }}{% endif %}</span>
+    <span class="fio-date">ФИО Дата</span>
+    <span class="line" style="width: 170px;">{% if item and item.status == 0 %}{{ item.date|date:"d.m.Y" }}{% endif %}</span>
+    {% endwith %}
+</div>
+
+<div class="item">
+    {% with item=statement.line_statuses|get_by_department:"Военно-учетный стол" %}
+    <span class="item-num">4.</span> Военно-учетный стол ( ул. Тихоокеанская, 136, ауд. 203л )
+    <span class="line" style="width: 220px;">{% if item and item.status == 0 %}{{ item.staff_worker.full_name }} {% endif %}</span><br>
+    <span class="fio-date">ФИО Дата</span>
+    <span class="line" style="width: 220px;">{% if item and item.status == 0 %}{{ item.date|date:"d.m.Y" }}{% endif %}</span><br>
+    <span class="indent-block">(для юношей) </span>
+    {% endwith %}
+</div>
+
+<div class="section-break">Посетить не ранее, чем за 2 дня до защиты ВКР: </div>
+
+<div class="item">
+    {% with item=statement.line_statuses|get_by_department:"Бухгалтерия" %}
+    <span class="item-num">5.</span> Бухгалтерия
+    <span class="line" style="width: 220px;">{% if item and item.status == 0 %}{{ item.staff_worker.full_name }}{% endif %}</span>
+    <span class="fio-date">ФИО Дата</span>
+    <span class="line" style="width: 200px;">{% if item and item.status == 0 %}{{ item.date|date:"d.m.Y" }}{% endif %}</span><br>
+    <span class="indent-block">(ТОГУ – ул. Тихоокеанская 136, ауд. 226ц, ХГУЭП – ул. Тихоокеанская 136, ауд. 224ц, пединститут – ул. Лермонтова, 50, (2 общ., каб. 113) </span>
+    {% endwith %}
+</div>
+
+<div class="item">
+    {% with item=statement.line_statuses|get_by_department:"Кастелянша" %}
+    <span class="item-num">6.</span> Кастелянша
+    <span class="line" style="width: 280px;">{% if item and item.status == 0 %}{{ item.staff_worker.full_name }}{% endif %}</span>
+    <span class="fio-date">ФИО Дата</span>
+    <span class="line" style="width: 280px;">{% if item and item.status == 0 %}{{ item.date|date:"d.m.Y" }}{% endif %}</span><br>
+    <span class="indent-block">(для проживающих/проживавших в общежитиях – общ., в котором проживали; <br>
+    для не проживавших в общ.: педагогический институт – ул. Лермонтова, 50, общ 2; ТОГУ, ХГУЭП – ул. Тихоокеанская, 142 (вход с торца здания, каб. 3);</span>
+    {% endwith %}
+</div>
+
+<div class="item">
+    {% with item=statement.line_statuses|get_by_department:"Зав. общежитием" %}
+    <span class="item-num">7.</span> Заведующий общежитием
+    <span class="line" style="width: 220px;">{% if item and item.status == 0 %}{{ item.staff_worker.full_name }}{% endif %}</span>
+    <span class="fio-date">ФИО Дата</span>
+    <span class="line" style="width: 220px;">{% if item and item.status == 0 %}{{ item.date|date:"d.m.Y" }}{% endif %}</span><br>
+    <span class="indent-block">см. маршрут п. 6 </span>
+    {% endwith %}
+</div>
+
+<div class="item">
+    {% with item=statement.line_statuses|get_by_department:"Дирекция студгородка" %}
+    <span class="item-num">8.</span> Дирекция студенческого городка
+    <span class="line" style="width: 200px;">{% if item and item.status == 0 %}{{ item.staff_worker.full_name }}{% endif %}</span>
+    <span class="fio-date">ФИО Дата</span>
+    <span class="line" style="width: 180px;">{% if item and item.status == 0 %}{{ item.date|date:"d.m.Y" }}{% endif %}</span><br>
+    <span class="indent-block">(ул. Тихоокеанская, 142 (вход с торца здания, каб. 3) </span>
+    {% endwith %}
+</div>
+
+<div class="item">
+    {% with item=statement.line_statuses|get_by_department:"Вып. кафедра" %}
+    <span class="item-num">9.</span> Высшая школа/ Вып. кафедра
+    <span class="line" style="width: 460px;">{% if item and item.status == 0 %}{{ item.staff_worker.full_name }} {{ item.date|date:"d.m.Y" }}{% endif %}</span>
+    {% endwith %}
+</div>
+
+<div class="item">
+    {% with item=statement.line_statuses|get_by_department:"Директор института" %}
+    <span class="item-num">10.</span>Директор института
+    <span class="line" style="width: 520px;">{% if item and item.status == 0 %}{{ item.staff_worker.full_name }}{{ item.date|date:"d.m.Y" }}{% endif %}</span>
+    {% endwith %}
+</div>
+
+<div style="margin-top: 40px;">
+    <span class="label-bold">Заверил сотрудник студенческого офиса:</span> Иванов Иван Иванович. <br><br>
+    <span class="label-bold">Подпись:</span> <span class="line" style="width: 180px;"></span>
+</div>
+
+</body>
+</html>

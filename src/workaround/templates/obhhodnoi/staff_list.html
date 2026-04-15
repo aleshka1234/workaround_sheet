@@ -1,10 +1,56 @@
 {% extends 'base.html' %}
 
 {% block content %}
-<div class="card shadow-sm">
+<div class="card shadow-sm mb-4">
+    <div class="card-body bg-light border-bottom">
+        <form method="get" action="{% url 'staff_list' %}" class="row g-2 align-items-center">
+
+            <div class="col-md-5">
+                <div class="input-group">
+                    <span class="input-group-text bg-white"><span class="material-icons" style="font-size: 18px;">search</span></span>
+                    <input type="text" name="q" class="form-control" placeholder="Поиск по ФИО студента..." value="{{ search_query }}">
+                </div>
+            </div>
+
+            <div class="col-md-4">
+                <select name="status" class="form-select">
+                    <option value="">Все статусы</option>
+                    <option value="1" {% if status_filter == '1' %}selected{% endif %}>⏳ В ожидании</option>
+                    <option value="0" {% if status_filter == '0' %}selected{% endif %}>✅ Подписано</option>
+                    <option value="3" {% if status_filter == '3' %}selected{% endif %}>❌ Долг</option>
+                    <option value="2" {% if status_filter == '2' %}selected{% endif %}>⛔ Отказано (Явка)</option>
+                </select>
+            </div>
+
+            <div class="col-md-3 d-flex gap-2">
+                <button type="submit" class="btn btn-primary flex-grow-1">Найти</button>
+                {% if search_query or status_filter %}
+                    <a href="{% url 'staff_list' %}" class="btn btn-outline-secondary" title="Сбросить фильтры">
+                        <span class="material-icons align-middle" style="font-size: 18px;">close</span>
+                    </a>
+                {% endif %}
+            </div>
+        </form>
+    </div>
+
+    <div class="d-flex justify-content-between align-items-center p-3 border-bottom">
+        <h5 class="mb-0">Заявления: {{ department.name }}
+            <span class="badge bg-secondary ms-2">{{ items|length }} шт.</span>
+        </h5>
+
+        <form method="post" action="{% url 'staff_list' %}">
+            {% csrf_token %}
+            <button type="submit" name="sign_all_clean" class="btn btn-success btn-sm d-flex align-items-center">
+                <span class="material-icons me-1" style="font-size: 18px;">done_all</span>
+                Подписать всем, у кого нет долгов
+            </button>
+        </form>
+    </div>
+
     <div class="card-body p-0">
         <div class="table-responsive">
             <table class="table table-hover align-middle mb-0">
+            ...
                 <thead class="bg-light">
                     <tr>
                         <th class="ps-4">Студент</th>
@@ -17,12 +63,14 @@
                     <tr>
                         <td class="ps-4">
                             <div class="fw-bold">{{ item.statement.student.full_name }}</div>
-                            <small class="text-muted">Заявление №{{ item.statement.id }}</small>
+                            <small class="text-muted">Заявление №{{ item.statement.id }} | {{ item.statement.student.group }}</small>
                         </td>
                         <td>
                             {% if item.status == 0 %}
                                 <span class="badge bg-success-subtle text-success border border-success px-3">Подписано</span>
                             {% elif item.status == 2 %}
+                                <span class="badge bg-warning-subtle text-warning border border-warning px-3">Отказано</span>
+                            {% elif item.status == 3 %}
                                 <span class="badge bg-danger-subtle text-danger border border-danger px-3">Долг</span>
                             {% else %}
                                 <span class="badge bg-secondary-subtle text-secondary border border-secondary px-3">В ожидании</span>
@@ -37,9 +85,16 @@
                                     </button>
                                 </form>
 
+                                <form method="post" action="{% url 'item_action' item.id %}">
+                                    {% csrf_token %}
+                                    <button type="submit" name="action" value="refuse" class="btn btn-sm btn-outline-warning">
+                                        Отказать
+                                    </button>
+                                </form>
+
                                 <button type="button" class="btn btn-sm btn-outline-danger"
                                         data-bs-toggle="modal" data-bs-target="#modal{{ item.id }}">
-                                    Долг / Коммент.
+                                    Долг
                                 </button>
                             </div>
                         </td>
@@ -51,27 +106,19 @@
                                 <form method="post" action="{% url 'item_action' item.id %}">
                                     {% csrf_token %}
                                     <input type="hidden" name="action" value="comment">
-
                                     <div class="modal-header bg-light">
                                         <h5 class="modal-title">Причина задолженности</h5>
                                         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                                     </div>
-
                                     <div class="modal-body">
                                         <div class="mb-3">
-                                            <label for="commentText{{ item.id }}" class="form-label text-muted small">Укажите причину или инструкции для студента [cite: 49, 51]</label>
-                                            <textarea id="commentText{{ item.id }}"
-                                                      name="comment_text"
-                                                      class="form-control"
-                                                      rows="5"
-                                                      style="resize: none;"
-                                                      placeholder="Например: Не сданы книги в библиотеку..."></textarea>
+                                            <label class="form-label text-muted small">Укажите причину (например, номер кабинета или список книг)</label>
+                                            <textarea name="comment_text" class="form-control" rows="4" required></textarea>
                                         </div>
                                     </div>
-
                                     <div class="modal-footer bg-light border-0">
-                                        <button type="button" class="btn btn-secondary px-4" data-bs-dismiss="modal">Отмена</button>
-                                        <button type="submit" class="btn btn-danger px-4">Выставить долг</button>
+                                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
+                                        <button type="submit" class="btn btn-danger">Выставить долг</button>
                                     </div>
                                 </form>
                             </div>

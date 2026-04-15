@@ -8,26 +8,24 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from db.base import Base
 
-from enum import IntEnum
+from enum import IntEnum, Enum
 
 
 class StatusChoices(IntEnum):
-    """Совпадает с миграцией workaround 0002."""
+    """Enum для статуса заявления"""
 
-    SIGNED = 0
-    NOT_SIGNED = 1
-    DEBT = 2
+    SIGNED = 0 # Подписано
+    NOT_SIGNED = 1 # Не подписано
+    REFUSED = 2 # Отказано
+    DEBT = 3 # Долг
 
 
 STATUS_LABELS = {
     StatusChoices.SIGNED: "Подписано",
     StatusChoices.NOT_SIGNED: "Не подписано",
+    StatusChoices.REFUSED: "Отказано",
     StatusChoices.DEBT: "Долг",
 }
-
-
-def status_display(value: int) -> str:
-    return STATUS_LABELS.get(value, str(value))
 
 
 class Student(Base):
@@ -52,6 +50,23 @@ class Student(Base):
     statements: Mapped[List["ObhhodnoiListZaiavlenie"]] = relationship(
         back_populates="student",
         cascade="all, delete-orphan",
+    )
+
+    # === ПОЛЯ ДЛЯ SSO ===
+    sso_id: Mapped[Optional[str]] = mapped_column(
+        String(100), unique=True, nullable=True, index=True
+    )
+    email: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
+    last_login: Mapped[Optional[datetime]] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
+
+    # Для обычной авторизации (временно, для тестов)
+    username: Mapped[Optional[str]] = mapped_column(
+        String(100), unique=True, nullable=True
+    )
+    password_hash: Mapped[Optional[str]] = mapped_column(
+        String(255), nullable=True
     )
 
 
@@ -109,8 +124,30 @@ class StaffWorker(Base):
 
     # Обратная связь с моделью Department
     # Позволяет получить доступ к информации об отделе сотрудника
+
+    # === ПОЛЯ ДЛЯ SSO ===
+    sso_id: Mapped[Optional[str]] = mapped_column(
+        String(100), unique=True, nullable=True, index=True
+    )
+    email: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
+    last_login: Mapped[Optional[datetime]] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
+
+    # Для обычной авторизации (временно, для тестов)
+    username: Mapped[Optional[str]] = mapped_column(
+        String(100), unique=True, nullable=True
+    )
+    password_hash: Mapped[Optional[str]] = mapped_column(
+        String(255), nullable=True
+    )
+
     department: Mapped["Department"] = relationship(
         back_populates="staff_workers")
+
+    # Флаг для входа в админку
+    is_staff: Mapped[bool] = mapped_column(Boolean, default=False)
+    is_superuser: Mapped[bool] = mapped_column(Boolean, default=False)
 
 
 class ObhhodnoiListZaiavlenie(Base):
