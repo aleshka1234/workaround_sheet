@@ -6,6 +6,8 @@ from django.utils import timezone
 from sqlalchemy import select
 from sqlalchemy.orm import joinedload, selectinload
 from django.contrib.auth.decorators import login_required  # для функций
+from django.contrib.auth import logout
+from django.views.decorators.cache import never_cache
 from django.contrib.admin.views.decorators import \
     staff_member_required  # для админ-доступа
 from django.utils.decorators import method_decorator  # для классов (CBV)
@@ -29,6 +31,7 @@ def _session(request: HttpRequest):
 
 
 @login_required
+@never_cache
 def index(request):
     """Главная страница — перенаправляет в зависимости от роли."""
     user_type = request.session.get('user_type')
@@ -60,6 +63,7 @@ def index(request):
 
 
 @method_decorator(login_required, name='dispatch')
+@method_decorator(never_cache, name='dispatch')
 class StaffWorkerView(View):
     """Список заявлений для сотрудника конкретного отдела (ТЗ п. 12, 17)"""
     template_name = "obhhodnoi/staff_list.html"
@@ -164,6 +168,7 @@ class StaffWorkerView(View):
 
 
 @method_decorator(staff_required, name='dispatch')
+@method_decorator(never_cache, name='dispatch')
 class ItemActionView(View):
     """Индивидуальные действия над пунктом (Подпись / Выставление долга)"""
 
@@ -215,6 +220,7 @@ class ItemActionView(View):
 
 
 @method_decorator(login_required, name='dispatch')
+@method_decorator(never_cache, name='dispatch')
 class StudentPrintView(View):
     """Печать обходного листа - Приложение 1 (ТЗ п. 62)"""
 
@@ -253,6 +259,7 @@ class StudentPrintView(View):
 
 
 @method_decorator(login_required, name='dispatch')
+@method_decorator(never_cache, name='dispatch')
 class StudentPrintOfficialView(View):
     """Официальный бланк для печати."""
 
@@ -269,6 +276,7 @@ class StudentPrintOfficialView(View):
 
 
 @method_decorator(login_required, name='dispatch')
+@method_decorator(never_cache, name='dispatch')
 class StudentCreateStatementView(View):
     """Создание обходного листа (студентом)"""
     template_name = "obhhodnoi/create_statement.html"
@@ -302,3 +310,18 @@ class StudentCreateStatementView(View):
 
         # Перенаправляем на страницу этого заявления (Приложение 1 или Detail)
         return redirect('student_print', pk=new_statement.id)
+
+
+def logout_view(request: HttpRequest) -> HttpResponse:
+    """
+    Полностью очищает сессию пользователя и разлогинивает его.
+    """
+    # тандартный логаут Django (очищает встроенную сессию)
+    logout(request)
+
+    # Принудительно зачищаем все кастомные переменные (на всякий случай)
+    request.session.flush()
+
+    # Перенаправляем на страницу входа
+    # Убедись, что 'login' совпадает с именем маршрута (name='login') в твоем urls.py
+    return redirect('login')

@@ -28,6 +28,7 @@
                         <br><small class="text-muted">{{ item.date|date:"d.m.Y H:i" }}</small>
                     {% elif item.status == 3 %}
                         <span class="badge bg-danger">❌ Долг</span>
+                        <br><small class="text-muted">{{ item.date|date:"d.m.Y H:i" }}</small>
                     {% elif item.status == 2 %}
                         <span class="badge bg-warning text-dark">⛔ Отказано</span>
                         <br><small class="text-muted">Требуется явка</small>

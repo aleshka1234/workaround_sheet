@@ -1,7 +1,7 @@
 from django.urls import path
 from .views import StaffWorkerView, ItemActionView, \
     StudentPrintView, StudentCreateStatementView, index, \
-    StudentPrintOfficialView
+    StudentPrintOfficialView, logout_view
 
 urlpatterns = [
     path('', index, name='index'),  # ← главная с редиректом
@@ -18,5 +18,7 @@ urlpatterns = [
          name='student_print'),
     path('student/<int:pk>/print/official/',
          StudentPrintOfficialView.as_view(), name='student_print_official'),
+    # Маршрут для кнопки выхода
+    path('logout/', logout_view, name='custom_logout'),
 
 ]

@@ -49,9 +49,11 @@ class WorkaroundAuthBackend(BaseBackend):
             first_name = name_parts[1] if len(name_parts) > 1 else ""
             last_name = name_parts[0] if name_parts else ""
 
+            django_id = user_data.id if user_type == 'student' else -user_data.id
+
             # Создаём Django-пользователя (в памяти, не сохраняем)
             django_user = User(
-                id=user_data.id,
+                id=django_id,
                 username=username,
                 first_name=first_name,
                 last_name=last_name,
@@ -69,6 +71,7 @@ class WorkaroundAuthBackend(BaseBackend):
             # Сохраняем дополнительные данные в сессии
             request.session['user_type'] = user_type
             request.session['user_db_id'] = user_data.id
+            request.session['user_full_name'] = user_data.full_name
             if user_type == 'staff':
                 request.session['department_id'] = user_data.department_id
 
@@ -86,22 +89,25 @@ class WorkaroundAuthBackend(BaseBackend):
 
         db = SessionLocal()
         try:
-            # Ищем студента
-            student = db.query(Student).get(user_id)
-            if student:
-                user = User(id=student.id, username=student.username)
-                user.is_staff = False
-                user.email = student.email or ""
-                return user
-
-            # Ищем сотрудника
-            staff = db.query(StaffWorker).get(user_id)
-            if staff:
-                user = User(id=staff.id, username=staff.username)
-                user.is_staff = staff.is_staff
-                user.is_superuser = staff.is_superuser
-                user.email = staff.email or ""
-                return user
+            if user_id > 0: # Положительный ID — ищем в студентах
+                # Ищем студента
+                student = db.query(Student).get(user_id)
+                if student:
+                    user = User(id=student.id, username=student.username)
+                    user.is_staff = False
+                    user.email = student.email or ""
+                    user.full_name = student.full_name
+                    return user
+            elif user_id < 0:
+                # Ищем сотрудника
+                staff = db.query(StaffWorker).get(abs(user_id))
+                if staff:
+                    user = User(id=staff.id, username=staff.username)
+                    user.is_staff = staff.is_staff
+                    user.is_superuser = staff.is_superuser
+                    user.email = staff.email or ""
+                    user.full_name = staff.full_name
+                    return user
 
             return None
         finally:

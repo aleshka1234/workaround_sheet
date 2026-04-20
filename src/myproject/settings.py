@@ -75,6 +75,7 @@ MIDDLEWARE = [
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
     'workaround.middleware.SQLAlchemySessionMiddleware',
+    'workaround.middleware.DisableBfCacheMiddleware',
 ]
 
 AUTHENTICATION_BACKENDS = [
@@ -156,6 +157,7 @@ LOGOUT_REDIRECT_URL = '/accounts/login/'
 # Отключаем автоматическое обновление last_login через Django ORM
 # Мы обновляем его сами в бэкенде
 from django.contrib.auth import user_logged_in
+
 
 def disable_update_last_login(sender, user, request, **kwargs):
     pass
